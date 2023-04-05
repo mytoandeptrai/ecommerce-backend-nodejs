@@ -2,25 +2,39 @@
 const { BadRequestError } = require('../core/error.response');
 /** USE FACTORY DESIGN PATTERN */
 
-const { product, clothing, electronic } = require('../models/product.model');
+const {
+   product,
+   clothing,
+   electronic,
+   furniture,
+} = require('../models/product.model');
+const { findAllDraftForShop } = require('../models/repositories/product.repo');
 
-/** define factory class to create product */
+/** combine factory and strategy patterns class to create product */
 class ProductFactory {
    /**
     * @param {string} type
     * @param {requestBody} payload
     */
+
+   static productRegistry = {}; /** contains key-class */
+
+   static registerProductType(type, classRef) {
+      this.productRegistry[type] = classRef;
+   }
+
    static async createProduct(type, payload) {
-      switch (type) {
-         case 'Electronic':
-            return new Electronic(payload).createProduct();
-         case 'Clothing':
-            return new Clothing(payload).createProduct();
-         case 'Furniture':
-            return new Furniture(payload).createProduct();
-         default:
-            throw new BadRequestError(`Invalid type product ${type}`);
-      }
+      const productClass = this.productRegistry[type];
+      if (!productClass)
+         throw new BadRequestError(`Invalid type product ${type}`);
+
+      return new productClass(payload).createProduct();
+   }
+
+   /** QUERIES */
+   static async findAllDraftForShop({ product_shop, limit = 50, skip = 0 }) {
+      const query = { product_shop, isDraft: true };
+      return await findAllDraftForShop({ query, limit, skip });
    }
 }
 
@@ -81,7 +95,7 @@ class Electronic extends Product {
 
       const newElectronic = await electronic.create(body);
       if (!newElectronic)
-         throw new BadRequestError('Create new Clothing error');
+         throw new BadRequestError('Create new Electronic error');
 
       /** super is extended class */
       const newProduct = await super.createProduct(newElectronic._id);
@@ -97,8 +111,9 @@ class Furniture extends Product {
          product_shop: this.product_shop,
       };
 
-      const newFurniture = await electronic.create(body);
-      if (!newFurniture) throw new BadRequestError('Create new Furniture error');
+      const newFurniture = await furniture.create(body);
+      if (!newFurniture)
+         throw new BadRequestError('Create new Furniture error');
 
       /** super is extended class */
       const newProduct = await super.createProduct(newFurniture._id);
@@ -107,5 +122,10 @@ class Furniture extends Product {
       return newProduct;
    }
 }
+
+/** Register for product type above */
+ProductFactory.registerProductType('Electronics', Electronic);
+ProductFactory.registerProductType('Clothing', Clothing);
+ProductFactory.registerProductType('Furniture', Furniture);
 
 module.exports = ProductFactory;
