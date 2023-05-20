@@ -54,7 +54,6 @@ const checkPermission = (permission) => {
 
 const asyncHandler = (fn) => (req, res, next) =>
    Promise.resolve(fn(req, res, next)).catch((error) => {
-      console.log('🚀 ~ file: checkAuth.js:57 ~ error:', error);
       next(error);
    });
 

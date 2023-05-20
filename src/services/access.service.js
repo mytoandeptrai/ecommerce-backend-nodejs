@@ -227,21 +227,11 @@ class AccessService {
          tokens,
       };
    };
-   
-   static handlerRefreshTokenV2 = async (refreshToken) => {
-      /** detect if token is already used */
-      const foundToken = await KeyTokenService.findByRefreshTokenUsed(
-         refreshToken
-      );
 
-      /** if yes */
-      if (foundToken) {
-         /** decode to watch this token is existed */
-         const { userId, email } = await verifyJWT(
-            refreshToken,
-            foundToken.privateKey
-         );
+   static handlerRefreshTokenV2 = async ({ refreshToken, user, keyStore }) => {
+      const { userId, email } = user;
 
+      if (keyStore.refreshTokensUsed.includes(refreshToken)) {
          /** simple way: delete all token in keystore */
          await KeyTokenService.deleteKeyById(userId);
          throw new ForbiddenError(
@@ -249,18 +239,8 @@ class AccessService {
          );
       }
 
-      /** if no */
-      const holderToken = await KeyTokenService.findByRefreshToken(
-         refreshToken
-      );
-
-      if (!holderToken) throw new AuthFailureError('Shop is not registered!');
-
-      /** verify token */
-      const { userId, email } = await verifyJWT(
-         refreshToken,
-         holderToken.privateKey
-      );
+      if (keyStore.refreshToken !== refreshToken)
+         throw new AuthFailureError('Shop is not registered!');
 
       /** check userId */
       const foundShop = await findByEmail({ email });
@@ -269,12 +249,12 @@ class AccessService {
       /** Create double tokens */
       const tokens = await createTokenPair(
          { userId, email },
-         holderToken.publicKey,
-         holderToken.privateKey
+         keyStore.publicKey,
+         keyStore.privateKey
       );
 
       /** Update token */
-      await holderToken.updateOne({
+      await keyStore.updateOne({
          $set: {
             refreshToken: tokens.refreshToken,
          },
@@ -284,7 +264,7 @@ class AccessService {
          },
       });
       return {
-         user: { userId, email },
+         user,
          tokens,
       };
    };

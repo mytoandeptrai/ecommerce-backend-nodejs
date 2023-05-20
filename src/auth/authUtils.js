@@ -9,7 +9,7 @@ const HEADER = {
    API_KEY: 'x-api-key',
    AUTHORIZATION: 'authorization',
    CLIENT_ID: 'x-client-id',
-   REFRESHTOKEN: 'refreshtoken',
+   REFRESHTOKEN: 'x-rtoken-id',
 };
 
 const createTokenPair = async (payload, publicKey, privateKey) => {
@@ -35,7 +35,7 @@ const createTokenPair = async (payload, publicKey, privateKey) => {
    } catch (error) {}
 };
 
-const authentication = asyncHandler(async (req, res, next) => {
+const authenticationV2 = asyncHandler(async (req, res, next) => {
    /**
     * 1: Check userId missing??
     * 2: Get Access Token
@@ -48,13 +48,11 @@ const authentication = asyncHandler(async (req, res, next) => {
    /** 1 */
    const userId = req.headers[HEADER.CLIENT_ID];
    if (!userId) throw new AuthFailureError('Invalid Request');
-
    /** 2 */
    const keyStore = await findByUserId(userId);
    if (!keyStore) throw new NotFoundError('Not Found Key Store');
 
    /** 3 */
-
    if (req.headers[HEADER.REFRESHTOKEN]) {
       try {
          const refreshToken = req.headers[HEADER.REFRESHTOKEN];
@@ -88,7 +86,7 @@ const authentication = asyncHandler(async (req, res, next) => {
    }
 });
 
-const authenticationV2 = asyncHandler(async (req, res, next) => {
+const authentication = asyncHandler(async (req, res, next) => {
    /**
     * 1: Check userId missing??
     * 2: Get Access Token

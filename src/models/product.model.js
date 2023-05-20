@@ -59,8 +59,10 @@ const productSchema = new mongoose.Schema(
    }
 );
 
-/** Mongo middleware */
+/** Create index for searching */
+productSchema.index({ product_name: 'text', product_description: 'text' });
 
+/** Mongo middleware */
 productSchema.pre('save', function (next) {
    this.product_slug = slugify(this.product_name, { lower: true });
    next();

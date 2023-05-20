@@ -8,6 +8,7 @@ const errorMiddleware = (error, req, res, next) => {
       message: error.message,
       status,
       errorCode,
+      stack: error.stack,
       time,
    });
 };
